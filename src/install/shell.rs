@@ -219,7 +219,7 @@ fn detect_distribution() -> Distribution {
         if let Some(id) = &id_value {
             match id.as_str() {
                 // Arch and Arch-based distributions
-                "arch" | "archlinux" | "archarm" | "archcraft" | "cachyos" | "endeavouros" | "manjaro" | "manjaro-arm" | "arcolinux" | "artix" | "garuda" | "parabola" => return Distribution::Arch,
+                "arch" | "archlinux" | "archarm" | "archcraft" | "cachyos" | "Nyarch" |"endeavouros" | "manjaro" | "manjaro-arm" | "arcolinux" | "artix" | "garuda" | "parabola" => return Distribution::Arch,
                 "void" => return Distribution::Void,
                 "fedora" => return Distribution::Fedora,
                 "debian" => return Distribution::Debian,

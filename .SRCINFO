@@ -1,4 +1,4 @@
-pkgbase = noctalia-cli
+pkgbase = noctalia
 	pkgdesc = A simple CLI for installing and updating Noctalia components
 	pkgver = 0.1.0
 	pkgrel = 1

@@ -12,25 +12,25 @@ source=("$pkgname-$pkgver.tar.gz::https://github.com/noctalia-dev/noctalia-cli/a
 sha256sums=('SKIP')
 
 prepare() {
-  cd "$srcdir/noctalia-cli-v$pkgver"
+  cd "$srcdir/noctalia-cli-$pkgver"
   cargo fetch --locked
 }
 
 build() {
-  cd "$srcdir/noctalia-cli-v$pkgver"
+  cd "$srcdir/noctalia-cli-$pkgver"
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
   cargo build --frozen --release
 }
 
 check() {
-  cd "$srcdir/noctalia-cli-v$pkgver"
+  cd "$srcdir/noctalia-cli-$pkgver"
   export RUSTUP_TOOLCHAIN=stable
   cargo test --frozen
 }
 
 package() {
-  cd "$srcdir/noctalia-cli-v$pkgver"
+  cd "$srcdir/noctalia-cli-$pkgver"
   install -Dm755 "target/release/noctalia" "$pkgdir/usr/bin/noctalia"
   
   # Install license if it exists
@@ -42,4 +42,3 @@ package() {
     install -Dm644 LICENSE-APACHE "$pkgdir/usr/share/licenses/$pkgname/LICENSE-APACHE"
   fi
 }
-

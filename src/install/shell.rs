@@ -415,6 +415,41 @@ fn install_fedora_packages(package_map: &[(&str, Option<&str>)]) -> Result<(), B
         }
     }
 
+    // Handle quickshell specifically for Fedora (requires COPR)
+    if missing.contains(&"quickshell") {
+        ui::info("quickshell is not available in standard Fedora repositories.");
+        ui::info("It can be installed from the COPR repository: errornointernet/quickshell");
+        
+        use dialoguer::{theme::ColorfulTheme, Confirm};
+        let theme = ColorfulTheme::default();
+        let should_enable = Confirm::with_theme(&theme)
+            .with_prompt("Would you like to enable the COPR repository errornointernet/quickshell?")
+            .interact()
+            .unwrap_or(false);
+
+        if should_enable {
+            ui::step("Enabling COPR repository errornointernet/quickshell");
+            let status = Command::new("sudo")
+                .args(["dnf", "copr", "enable", "-y", "errornointernet/quickshell"])
+                .stdin(std::process::Stdio::inherit())
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::inherit())
+                .status()?;
+
+            if !status.success() {
+                return Err("Failed to enable COPR repository".into());
+            }
+
+            ui::success("COPR repository enabled successfully");
+            // Remove quickshell from missing and add it to install list
+            missing.retain(|&x| x != "quickshell");
+            to_install.push("quickshell");
+        } else {
+            ui::info("Skipping COPR repository setup. quickshell will not be installed.");
+            ui::info("You can enable it manually later with: sudo dnf copr enable errornointernet/quickshell");
+        }
+    }
+
     if !missing.is_empty() {
         ui::error("The following packages are not available in Fedora repositories:");
         for pkg in &missing {

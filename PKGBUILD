@@ -1,4 +1,4 @@
-# Maintainer: Your Name <your.email@example.com>
+# Maintainer: Ly-sec <itslysec@gmail.com>
 pkgname=noctalia-cli
 pkgver=0.1.0
 pkgrel=1

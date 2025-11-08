@@ -1,5 +1,5 @@
 # Maintainer: Ly-sec <itslysec@gmail.com>
-pkgname=noctalia-cli
+pkgname=noctalia
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="A simple CLI for installing and updating Noctalia components"

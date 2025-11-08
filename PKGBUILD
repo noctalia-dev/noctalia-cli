@@ -7,7 +7,7 @@ arch=('x86_64' 'aarch64')
 url="https://github.com/noctalia-dev/noctalia-cli"
 license=('MIT' 'Apache')
 depends=('glibc' 'gcc-libs')
-makedepends=('cargo' 'git')
+makedepends=('cargo' 'git' 'clang')  # Added clang
 source=("$pkgname-$pkgver.tar.gz::https://github.com/noctalia-dev/noctalia-cli/archive/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 
@@ -20,6 +20,9 @@ build() {
   cd "$srcdir/noctalia-cli-$pkgver"
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
+  # Ensure ring can find the C compiler
+  export CC=clang
+  export CXX=clang++
   cargo build --frozen --release
 }
 

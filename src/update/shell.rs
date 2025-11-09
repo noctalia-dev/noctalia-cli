@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf, process::Command};
+use std::{env, fs, path::PathBuf};
 
 use crate::SourceKind;
 use crate::config;
@@ -6,7 +6,11 @@ use crate::ui;
 
 const REPO_API: &str = "https://api.github.com/repos/noctalia-dev/noctalia-shell";
 const REPO_CODELOAD_MAIN: &str = "https://codeload.github.com/noctalia-dev/noctalia-shell/tar.gz/refs/heads/main";
-const TARGET_ROOT: &str = "/etc/xdg/quickshell/noctalia-shell";
+
+fn target_root() -> PathBuf {
+    let home = env::var("HOME").expect("HOME environment variable not set");
+    PathBuf::from(home).join(".config/quickshell/noctalia-shell")
+}
 
 #[derive(serde::Deserialize)]
 struct ReleaseInfo { 
@@ -171,42 +175,64 @@ fn download_latest_release() -> Result<PathBuf, Box<dyn std::error::Error>> {
 
 fn download_and_extract_git_main() -> Result<(), Box<dyn std::error::Error>> {
     let archive = download_git_main()?;
-    extract_with_sudo(&archive)?;
+    extract(&archive)?;
     let _ = fs::remove_file(&archive);
     Ok(())
 }
 
 fn download_and_extract_latest_release() -> Result<(), Box<dyn std::error::Error>> {
     let archive = download_latest_release()?;
-    extract_with_sudo(&archive)?;
+    extract(&archive)?;
     let _ = fs::remove_file(&archive);
     Ok(())
 }
 
-fn shell_quote(path: &PathBuf) -> String {
-    let s = path.display().to_string();
-    s.replace("'", "'\\''")
-}
-
-fn extract_with_sudo(archive_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-    let arch_q = shell_quote(archive_path);
-    let target_q = shell_quote(&PathBuf::from(TARGET_ROOT));
-    let cmd = format!(
-        "rm -rf '{target}' && mkdir -p '{target}' && tar -xzf '{arch}' -C '{target}' --strip-components=1",
-        target = target_q,
-        arch = arch_q
-    );
-
-    ui::info("Elevating with sudo. You may be prompted for your password.");
-
-    let status = Command::new("sudo")
-        .args(["sh", "-c", &cmd])
-        .stdin(std::process::Stdio::inherit())
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
-        .status()?;
-    if !status.success() {
-        return Err("sudo command failed".into());
+fn extract(archive_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    let target = target_root();
+    
+    // Remove existing directory if it exists
+    if target.exists() {
+        fs::remove_dir_all(&target)?;
     }
+    
+    // Create parent directories
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    
+    // Extract archive
+    let file = fs::File::open(archive_path)?;
+    let mut archive = tar::Archive::new(flate2::read::GzDecoder::new(file));
+    archive.unpack(&target)?;
+    
+    // Move contents up one level (strip-components=1 equivalent)
+    let extracted_dir = target.join("noctalia-shell-main");
+    if extracted_dir.exists() {
+        // Move all contents from noctalia-shell-main to target
+        for entry in fs::read_dir(&extracted_dir)? {
+            let entry = entry?;
+            let dest = target.join(entry.file_name());
+            fs::rename(entry.path(), dest)?;
+        }
+        fs::remove_dir(&extracted_dir)?;
+    } else {
+        // Try with release tag name pattern
+        let entries: Vec<_> = fs::read_dir(&target)?.collect();
+        if entries.len() == 1 {
+            if let Some(Ok(entry)) = entries.into_iter().next() {
+                let entry_path = entry.path();
+                if entry_path.is_dir() {
+                    // Move all contents from the single subdirectory to target
+                    for sub_entry in fs::read_dir(&entry_path)? {
+                        let sub_entry = sub_entry?;
+                        let dest = target.join(sub_entry.file_name());
+                        fs::rename(sub_entry.path(), dest)?;
+                    }
+                    fs::remove_dir(&entry_path)?;
+                }
+            }
+        }
+    }
+    
     Ok(())
 }

@@ -16,7 +16,7 @@ pub use config::SourceKind;
     about = "Noctalia CLI",
     long_about = "A simple CLI for installing and updating Noctalia components.",
     arg_required_else_help = true,
-    help_template = "{about-with-newline}Usage:\n  {usage}\n\nCommands:\n{subcommands}\nOptions:\n{options}\n\nExamples:\n  noctalia install shell --release\n  noctalia install systemd\n  noctalia update shell\n  noctalia run\n  noctalia ipc call <target> <function>\n  noctalia ipc show\n"
+    help_template = "{about-with-newline}Usage:\n  {usage}\n\nCommands:\n{subcommands}\nOptions:\n{options}\n\nExamples:\n  noctalia install shell --release\n  noctalia install systemd\n  noctalia update shell\n  noctalia run\n  noctalia ipc <target> <function>\n  noctalia ipc show\n"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -50,9 +50,16 @@ enum Commands {
     #[command(
         about = "IPC commands for noctalia-shell",
         long_about = "Send IPC commands to the running noctalia-shell instance.",
-        help_template = "IPC\n\nUsage:\n  {usage}\n\nSubcommands:\n{subcommands}\n\nExamples:\n  noctalia ipc call <target> <function>\n  noctalia ipc show\n"
+        help_template = "IPC\n\nUsage:\n  {usage}\n\nExamples:\n  noctalia ipc <target> <function>\n  noctalia ipc show\n"
     )]
-    Ipc(IpcTargets),
+    Ipc {
+        /// Target name for the IPC call, or 'show' to list available targets and functions
+        #[arg(value_name = "TARGET")]
+        target: String,
+        /// Function name for the IPC call (optional if target is 'show')
+        #[arg(value_name = "FUNCTION")]
+        function: Option<String>,
+    },
 }
 
 #[derive(Parser, Debug)]
@@ -85,31 +92,6 @@ struct UpdateTargets {
     target: UpdateSub,
 }
 
-#[derive(Parser, Debug)]
-#[command(arg_required_else_help = true)]
-struct IpcTargets {
-    #[command(subcommand)]
-    target: IpcSub,
-}
-
-#[derive(Subcommand, Debug)]
-enum IpcSub {
-    #[command(
-        about = "Send an IPC call to noctalia-shell",
-        help_template = "IPC Call\n\nUsage:\n  {usage}\n\nArguments:\n{args}\n\nExamples:\n  noctalia ipc call <target> <function>\n"
-    )]
-    Call {
-        /// Target name for the IPC call
-        target: String,
-        /// Function name for the IPC call
-        function: String,
-    },
-    #[command(
-        about = "Show available IPC targets and functions",
-        help_template = "IPC Show\n\nUsage:\n  {usage}\n\nExamples:\n  noctalia ipc show\n"
-    )]
-    Show,
-}
 
 #[derive(Subcommand, Debug)]
 enum UpdateSub {
@@ -148,13 +130,20 @@ fn main() {
         Commands::Run { debug } => {
             run::shell::run(debug);
         }
-        Commands::Ipc(IpcTargets { target }) => {
-            match target {
-                IpcSub::Call { target, function } => {
-                    ipc::shell::run_call(target, function);
-                }
-                IpcSub::Show => {
-                    ipc::shell::run_show();
+        Commands::Ipc { target, function } => {
+            if target == "show" {
+                ipc::shell::run_show();
+            } else {
+                match function {
+                    Some(func) => {
+                        ipc::shell::run_call(target, func);
+                    }
+                    None => {
+                        eprintln!("Error: Function name is required when making an IPC call.");
+                        eprintln!("Usage: noctalia ipc <target> <function>");
+                        eprintln!("       noctalia ipc show");
+                        std::process::exit(1);
+                    }
                 }
             }
         }

@@ -16,7 +16,7 @@ pub use config::SourceKind;
     about = "Noctalia CLI",
     long_about = "A simple CLI for installing and updating Noctalia components.",
     arg_required_else_help = true,
-    help_template = "{about-with-newline}Usage:\n  {usage}\n\nCommands:\n{subcommands}\nOptions:\n{options}\n\nExamples:\n  noctalia install shell --release\n  noctalia update shell\n  noctalia run\n  noctalia ipc call <target> <function>\n  noctalia ipc show\n"
+    help_template = "{about-with-newline}Usage:\n  {usage}\n\nCommands:\n{subcommands}\nOptions:\n{options}\n\nExamples:\n  noctalia install shell --release\n  noctalia install systemd\n  noctalia update shell\n  noctalia run\n  noctalia ipc call <target> <function>\n  noctalia ipc show\n"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -70,6 +70,12 @@ enum InstallSub {
         help_template = "Install Shell\n\nUsage:\n  {usage}\n\nOptions:\n{options}\n\nExamples:\n  noctalia install shell --release\n  noctalia install shell --git\n"
     )]
     Shell { #[arg(long)] git: bool, #[arg(long)] release: bool },
+    #[command(
+        about = "Install systemd user service for noctalia-shell",
+        long_about = "Install the systemd user service to automatically start noctalia-shell on login.",
+        help_template = "Install Systemd Service\n\nUsage:\n  {usage}\n\nExamples:\n  noctalia install systemd\n"
+    )]
+    Systemd,
 }
 
 #[derive(Parser, Debug)]
@@ -124,6 +130,9 @@ fn main() {
                 InstallSub::Shell { git, release } => {
                     let resolved = resolve_source("shell", git, release, &cfg);
                     install::shell::run(resolved);
+                }
+                InstallSub::Systemd => {
+                    install::systemd::run();
                 }
             }
         }

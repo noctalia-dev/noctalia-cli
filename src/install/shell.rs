@@ -248,8 +248,8 @@ fn detect_distribution() -> Distribution {
                 // Arch and Arch-based distributions
                 "arch" | "archlinux" | "archarm" | "archcraft" | "cachyos" | "Nyarch" |"endeavouros" | "manjaro" | "manjaro-arm" | "arcolinux" | "artix" | "garuda" | "parabola" => return Distribution::Arch,
                 "void" => return Distribution::Void,
-                "fedora" => return Distribution::Fedora,
-                "debian" => return Distribution::Debian,
+                "fedora" | "nobara" => return Distribution::Fedora,
+                "debian" | "pikaos" => return Distribution::Debian,
                 "ubuntu" => return Distribution::Debian,
                 "gentoo" => return Distribution::Gentoo,
                 _ => {}

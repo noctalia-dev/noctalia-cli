@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io, path::PathBuf};
+use std::{collections::HashMap, env, fs, io, path::PathBuf};
 
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
@@ -78,9 +78,39 @@ impl CliConfig {
     }
 
     pub fn is_component_installed(&self, component: &str) -> bool {
+        // For shell component, also check if it actually exists on the filesystem
+        if component == "shell" {
+            let filesystem_installed = check_shell_installed();
+            let config_installed = self.components.get("shell").map(|c| c.installed).unwrap_or(false);
+            
+            // If filesystem says installed but config says not, update the config
+            if filesystem_installed && !config_installed {
+                if let Ok((mut updated_cfg, path)) = CliConfig::load() {
+                    updated_cfg.set_installed("shell", true);
+                    let _ = updated_cfg.save(&path);
+                }
+            }
+            
+            return filesystem_installed;
+        }
+        
         self.components.get(component).map(|c| c.installed).unwrap_or(false)
     }
 
+}
+
+fn check_shell_installed() -> bool {
+    // Check both possible installation locations
+    let old_path = PathBuf::from("/etc/xdg/quickshell/noctalia-shell");
+    let home = env::var("HOME").unwrap_or_else(|_| String::new());
+    let new_path = if !home.is_empty() {
+        PathBuf::from(home).join(".config/quickshell/noctalia-shell")
+    } else {
+        PathBuf::new()
+    };
+    
+    // Check if either location exists
+    old_path.exists() || (!new_path.as_os_str().is_empty() && new_path.exists())
 }
 
 pub fn config_path() -> PathBuf {

@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 mod install;
 mod update;
 mod run;
+mod restart;
 mod ipc;
 mod config;
 mod ui;
@@ -16,7 +17,7 @@ pub use config::SourceKind;
     about = "Noctalia CLI",
     long_about = "A simple CLI for installing and updating Noctalia components.",
     arg_required_else_help = true,
-    help_template = "{about-with-newline}Usage:\n  {usage}\n\nCommands:\n{subcommands}\nOptions:\n{options}\n\nExamples:\n  noctalia install shell --release\n  noctalia install systemd\n  noctalia update shell\n  noctalia run\n  noctalia ipc <target> <function>\n  noctalia ipc show\n"
+    help_template = "{about-with-newline}Usage:\n  {usage}\n\nCommands:\n{subcommands}\nOptions:\n{options}\n\nExamples:\n  noctalia install shell --release\n  noctalia install systemd\n  noctalia update shell\n  noctalia run\n  noctalia restart\n  noctalia ipc <target> <function>\n  noctalia ipc show\n"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -47,6 +48,12 @@ enum Commands {
         #[arg(long)]
         debug: bool,
     },
+    #[command(
+        about = "Restart noctalia-shell",
+        long_about = "Restart noctalia-shell. Uses systemd if available and enabled, otherwise stops and restarts manually.",
+        help_template = "Restart Shell\n\nUsage:\n  {usage}\n\nExamples:\n  noctalia restart\n"
+    )]
+    Restart,
     #[command(
         about = "IPC commands for noctalia-shell",
         long_about = "Send IPC commands to the running noctalia-shell instance.",
@@ -129,6 +136,9 @@ fn main() {
         }
         Commands::Run { debug } => {
             run::shell::run(debug);
+        }
+        Commands::Restart => {
+            restart::shell::run();
         }
         Commands::Ipc { target, function } => {
             if target == "show" {
